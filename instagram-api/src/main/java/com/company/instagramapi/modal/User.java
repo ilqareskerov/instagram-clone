@@ -2,6 +2,7 @@ package com.company.instagramapi.modal;
 
 import com.company.instagramapi.dto.UserDto;
 import jakarta.persistence.*;
+import org.hibernate.validator.constraints.UniqueElements;
 
 import java.util.*;
 

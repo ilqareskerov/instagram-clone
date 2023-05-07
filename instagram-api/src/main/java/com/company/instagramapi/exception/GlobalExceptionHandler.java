@@ -1,6 +1,7 @@
 package com.company.instagramapi.exception;
 
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -10,16 +11,17 @@ import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 @RestControllerAdvice
-public class GlobalException extends ResponseEntityExceptionHandler  {
+public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
+    // handleHttpMediaTypeNotSupported : triggers when the JSON is invalid
     @Override
     protected ResponseEntity<Object> handleHttpMediaTypeNotSupported(HttpMediaTypeNotSupportedException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
         List<String> details = new ArrayList<String>();
@@ -64,14 +66,18 @@ public class GlobalException extends ResponseEntityExceptionHandler  {
         return ResponseEntity.badRequest()
                 .body(errors);
     }
-    @ExceptionHandler(UserException.class)
-    public ResponseEntity<Object> handleUserException(UserException ex,WebRequest req){
-        ErrorDetails errorDetails=new ErrorDetails(ex.getMessage(),req.getDescription(false), LocalDateTime.now());
-        return ResponseEntity.badRequest().body(errorDetails);
+
+    @ExceptionHandler(GenericException.class)
+    public ResponseEntity<?> handleException(GenericException ex) {
+        Map<String, Object> errors = new HashMap<>();
+        errors.put("error", ex.getErrorMessage());
+        errors.put("errorCode", ex.getErrorCode());
+        return ResponseEntity
+                .status(ex.getHttpStatus() != null ?  ex.getHttpStatus() : HttpStatus.BAD_REQUEST)
+                .body(errors);
     }
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<Object> handleAllException(Exception ex,WebRequest req){
-        ErrorDetails errorDetails=new ErrorDetails(ex.getMessage(),req.getDescription(false), LocalDateTime.now());
-        return ResponseEntity.badRequest().body(errorDetails);
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<GenericException> handleMaxSizeException(MaxUploadSizeExceededException exc) {
+        return ResponseEntity.status(HttpStatus.EXPECTATION_FAILED).body(new GenericException("File too large!"));
     }
 }
